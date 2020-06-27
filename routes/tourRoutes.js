@@ -4,14 +4,18 @@ const tourController = require("./../controllers/tourController");
 const router = express.Router();
 
 
-router.param("id",(req,res,next,val)=>{ //midlleware specific for id
+/*router.param("id",(req,res,next,val)=>{ //midlleware specific for id
     console.log(`Tours id is ${val}`);
     next();
 })
+*/
+
+router.param("id",tourController.checkId); //checking id
+
 
 router.route("/")
     .get(tourController.getAllTours)
-    .post(tourController.createTour)
+    .post(tourController.checkBody,tourController.createTour)
 
 
 router.route("/:id")

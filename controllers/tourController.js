@@ -2,6 +2,28 @@ const fs = require("fs");
 
 const tours = JSON.parse(fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`));  //convert to JS object
 
+exports.checkId = (req,res,next,val)=>{
+    if(val >=tours.length)
+    {
+        return res.status(404).json({   //while checking id return beacuse we dont want further code to get executed with the next() kwyword
+            status:"fail",
+            message:"Invalid Id"
+        })
+    }
+    next();
+}
+
+exports.checkBody = (req,res,next)=>{
+    if(req.body.name == null || req.body.price ==null)
+    {
+        return res.status(400).json({ //Bad request
+            status:"fail",
+            message:"Missing name or price"
+        })
+    }
+    next();
+}
+
 exports.getAllTours = (req,res)=>{    //const getAllTours == export.getAllTours //just exporting
     res.status(200).json({
         status:"success",
@@ -14,13 +36,15 @@ exports.getAllTours = (req,res)=>{    //const getAllTours == export.getAllTours 
 }
 exports.getTour = (req,res)=>{  
     let id= req.params.id;
-    if(id >=tours.length)
-    {
-        res.status(404).json({
-            status:"fail",
-            message:"Invalid Id"
-        })
-    }
+    /* Checking valid  ID
+        if(id >=tours.length)
+        {
+            res.status(404).json({
+                status:"fail",
+                message:"Invalid Id"
+            })
+        }
+    */
 
     res.status(200).send({
         status:"success",
@@ -45,13 +69,6 @@ exports.createTour = (req,res)=>{
 
 exports.updateTour = (req,res)=>{   
 
-    if(req.params.id*1> tours.length)
-    {
-        res.status(404).json({
-            status:"fail",
-            message:"Invalid Id"
-        })
-    }
     res.status(200).json({
         status:"success",
         data:{
@@ -61,13 +78,7 @@ exports.updateTour = (req,res)=>{
 }
 
 exports.deleteTour = (req,res)=>{
-    if(req.params.id*1> tours.length)
-    {
-        res.status(404).json({
-            status:"fail",
-            message:"Invalid Id"
-        })
-    }
+
     res.status(204).json({
         status:"success",
         data:null

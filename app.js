@@ -3,10 +3,15 @@ const tourRouter = require("./routes/tourRoutes.js");
 const userRouter = require("./routes/userRoutes.js");
 
 const app =express();
-
-///1)MiddleWare
+///1)MiddleWares
 
 app.use(express.json()) //Middleware
+app.use(express.static(`${__dirname}/public`)); //serving static file like overview.html 
+
+if(process.env.NODE_ENV === "development") //checking environment variable
+{
+    console.log("In development");
+}
 
 app.use((req,res,next)=>{       //Middleware
     console.log("hello from the middleware");

@@ -1,10 +1,34 @@
+const mongoose = require("mongoose");
 const dotenv = require("dotenv")
-
 dotenv.config({path:"./config.env"});
-
 const app = require("./app");
 
 ///console.log(process.env);
+
+const DB = process.env.DATABASE.replace("<PASSWORD>",process.env.DATABASE_PASSWORD);
+
+mongoose.connect(DB,{
+    useNewUrlParser:true,  //To deal with depricated tgings
+    useCreateIndex:true,
+    useFindAndModify:false,
+    useUnifiedTopology:true
+}).then(con =>{
+    //console.log(con.connections);
+    console.log("DB connection established");
+})
+
+
+
+// const testTour = new Tour({                   //Testing
+//     name:"The Park Camper",
+//     price:997,
+//     //rating: 4.7
+// })
+
+// testTour.save()
+//         .then(doc => console.log(doc))
+//         .catch(err => console.log("error ",err))
+
 
 
 const port=4000;

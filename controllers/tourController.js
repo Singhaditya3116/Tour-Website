@@ -1,35 +1,14 @@
 const Tour = require("./../models/tourModel");  //model with the help of which we can perform operation on the data
 const app = require("../app");
+const APIFeatures = require("./../utils/apiFeatures");
 
 /*              Since i am using now database so no use of FILE SYSTEM.
 const fs = require("fs");
 const tours = JSON.parse(fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`));  //convert to JS object
 
 
-exports.checkId = (req,res,next,val)=>{
-    if(val >=tours.length)
-    {
-        return res.status(404).json({   //while checking id return beacuse we dont want further code to get executed with the next() kwyword
-            status:"fail",
-            message:"Invalid Id"
-        })
-    }
-    next();
-}
 
-exports.checkBody = (req,res,next)=>{
-    if(req.body.name == null || req.body.price ==null)
-    {
-        return res.status(400).json({ //Bad request
-            status:"fail",
-            message:"Missing name or price"
-        })
-    }
-    next();
-}
-*/
-
-/* EARLIER WAY OF CREATING TOUR  
+ EARLIER WAY OF CREATING TOUR  
         const testTour = new Tour({                   //Testing
             name:"The Park Camper",5efb3a5c41e65669d5421bd2
             price:997,
@@ -44,61 +23,10 @@ exports.checkBody = (req,res,next)=>{
 exports.getAllTours = async (req,res)=>{    //const getAllTours == export.getAllTours //just exporting
 
     try{
-        console.log("req.query ",req.query);
-        //BUILD QUERY
-        //1A)FILTERING
-        let queryObj = { ...req.query }; //creating a copy of the object 
-        const excludedFields = ['page','sort','limits'];
-        excludedFields.forEach(el => delete queryObj[el]);
-
-        //1B)ADVANCE FILTERING
-        //{ difficulty: 'easy', duration: { $gte: '5' } }  --mongo 
-        // { difficulty: 'easy', duration: { gte: '5' } }    --req.query
-        let queryString = JSON.stringify(queryObj);
-        queryString =queryString.replace(/\b(gte|gt|lte|lt)\b/g,match => `$${match}`);
-        queryString = JSON.parse(queryString);
-        //console.log("queryobject ",queryString);
-        let query = Tour.find();
-
-
-        //2)SORTING
-        if(req.query.sort)
-        {
-            const sortBy =req.query.sort.split(",").join(" ");
-            query=query.sort(sortBy);
-        }else{
-            query=query.sort('-createdAt');
-        }
-
-        //3)FIELD LIMITING
-        if(req.query.fields)
-        {
-            const fields = req.query.fields.split(",").join(" ");
-            console.log(fields);
-            query=query.select(fields);
-        }else{
-            query=query.select('-__v -summary'); //not send __v
-        }
-
-        //4]PAGINATION
-        const page =req.query.page * 1 || 1;
-        const limit = req.query.limit * 1 || 100;
-        const skip = (page-1)*limit;
-
-        query=query.skip(skip).limit(limit);
-
-        if(req.query.page)
-        {
-            const numTours = await Tour.countDocuments();
-            if(skip >= numTours) 
-            {
-                throw new Error("The Document doesn't exist")
-            }
-        }
-
-
         //EXECUTE QUERY
-        const tours = await query;
+
+        const features = new APIFeatures(Tour.find(),req.query).filter().sort().limitFields().paginate();
+        const tours = await features.query;
         
         //SEND RESPONSE
         res.status(200).json({
@@ -191,4 +119,102 @@ exports.aliasTopTours = (req,res,next)=>{
     req.query.sort="-ratingsAverage,price";
     req.query.fields="name,price,ratingsAverage,summary,difficulty";
     next();
+}
+
+exports.getTourStats =async (req,res)=>{
+
+    try{
+
+        const stats = await Tour.aggregate([
+            {
+                $match: { ratingsAverage :{ $gte : 4.5} }
+            },
+            {
+                $group: {
+                    _id: "$difficulty",
+                    numTours : {$sum :1},
+                    numRatings: {$sum : "$ratingsQuantity"},
+                    avgRating: { $avg: "$ratingsAverage" },
+                    avgPrice: { $avg: "$price"},
+                    minPrice: { $min: "$price"},
+                    maxPrice: { $max: "$price" }
+                }
+            },
+            {
+                $sort:{ avgPrice:1}   //1 For ascending
+            }
+        ])
+
+        res.status(200).json({
+            status:"success",
+            data:{
+                stats :stats
+            }
+        })
+
+    }catch(err){
+        res.status(404).json({
+            status:"fail",
+            message:"Not found"
+        })
+    }
+}
+
+exports.getMonthlyPlan = async (req,res)=>{
+
+    try{
+        const year = req.params.year *1;
+
+        const plan = await Tour.aggregate([
+            {
+                $unwind: "$startDates"
+            },
+            {
+                $match: {
+                    startDates:{
+                        $gte: new Date(`${year}-01-01`),
+                        $lte: new Date(`${year}-12-31`)
+                    }
+                }
+            },
+            {
+                $group:{
+                    _id:{$month : "$startDates"},
+                    numTourStart: {$sum: 1},
+                    tours: {$push: "$name"}
+                }
+            },
+            {
+                $addFields:{
+                    month: "$_id" 
+                }
+            },
+            {
+                $project:{
+                    _id: 0
+                }
+            },
+            {
+                $sort: {numTourStart: -1}
+            },
+            {
+                $limit:12
+            }
+
+        ]);
+
+        res.status(200).json({
+            status:"success",
+            data:{
+                plan :plan
+            }
+        })
+
+
+    }catch(err){
+        res.status(404).json({
+            status:"fail",
+            message:"Not found"
+        })
+    }
 }

@@ -19,17 +19,6 @@ mongoose.connect(DB,{
 
 
 
-// const testTour = new Tour({                   //Testing
-//     name:"The Park Camper",
-//     price:997,
-//     //rating: 4.7
-// })
-
-// testTour.save()
-//         .then(doc => console.log(doc))
-//         .catch(err => console.log("error ",err))
-
-
 
 const port=4000;
 app.listen(port,()=>{

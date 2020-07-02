@@ -6,6 +6,7 @@ const app =express();
 ///1)MiddleWares
 
 app.use(express.json()) //Middleware
+app.use(express.urlencoded({extended:true}));
 app.use(express.static(`${__dirname}/public`)); //serving static file like overview.html 
 
 if(process.env.NODE_ENV === "development") //checking environment variable

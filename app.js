@@ -1,6 +1,8 @@
 const express = require("express");
 const tourRouter = require("./routes/tourRoutes.js");
 const userRouter = require("./routes/userRoutes.js");
+const AppError = require("./utils/appError");
+const globalErrorHandler = require("./controllers/errorController");
 
 const app =express();
 ///1)MiddleWares
@@ -13,7 +15,7 @@ if(process.env.NODE_ENV === "development") //checking environment variable
 {
     console.log("In development");
 }
-
+/*
 app.use((req,res,next)=>{       //Middleware
     console.log("hello from the middleware");
     next();
@@ -23,6 +25,7 @@ app.use((req,res,next)=>{    //middle ware which is changing the request variabl
     req.requiredTime = new Date().toISOString();
     next();
 })
+*/
 
 //2)Route Handler
 
@@ -38,6 +41,16 @@ app.delete("/api/v1/tours/:id",deleteTour)  //delete a tour
 
 app.use("/api/v1/tours",tourRouter); //Mounting the router
 app.use("/api/v1/users",userRouter);
+
+app.all("*",(req,res,next)=>{
+
+    // const err = new Error(`Can't find ${req.originalUrl} on this server!`);
+    // err.statusCode=404;
+    // err.status="fail";
+    next(new AppError(`Can't find ${req.originalUrl} on this server!`,404));
+})
+
+app.use(globalErrorHandler);
 
 
 //server.js
